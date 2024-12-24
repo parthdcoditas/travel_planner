@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Itinerary</title>
+    <link rel="stylesheet" href="static/css/itinerary.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Left Side: Itinerary -->
+        <div class="left-side">
+            <h2>Travel Itinerary</h2>
+            <div id="itineraryContent">{{ itinerary }}</div>
+        </div>
+
+        <!-- Right Side -->
+        <div class="right-side">
+            <!-- Top: Places Links -->
+            <div class="places-section">
+                <h3>Places</h3>
+                <ul id="placesList">
+                    {% for place in fetched_places %}
+                        <li>{{ place }}</li>
+                    {% endfor %}
+                </ul>
+                <form id="placesForm">
+                    <input type="text" id="locationInput" placeholder="Enter a location name" required>
+                    <button type="submit">Open in Maps</button>
+                </form>
+            </div>
+
+            <!-- Bottom: Chatbot -->
+            <div class="chatbot-section">
+                <h3>Chat with Us</h3>
+                <div id="chatArea"></div>
+                <input type="text" id="chatInput" placeholder="Ask a question...">
+                <button id="sendChat">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const placesForm = document.getElementById('placesForm');
+        const locationInput = document.getElementById('locationInput');
+        placesForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const locationName = locationInput.value.trim();
+            if (!locationName) return;
+
+            try {
+                const formData = new FormData();
+                formData.append('location_name', locationName);
+
+                const response = await fetch('/get-map-link', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.error) {
+                    alert(result.error);
+                } else {
+                    window.open(result.map_url, '_blank');
+                }
+            } catch (error) {
+                alert("Error fetching map link");
+            }
+        });
+
+        const chatInput = document.getElementById('chatInput');
+        const sendChat = document.getElementById('sendChat');
+        const chatArea = document.getElementById('chatArea');
+        const itineraryContent = document.getElementById('itineraryContent');
+
+        sendChat.addEventListener('click', async () => {
+            const userQuery = chatInput.value.trim();
+            if (!userQuery) return;
+
+            // Append the user's query to the chat area
+            const userMessage = document.createElement('div');
+            userMessage.textContent = `You: ${userQuery}`;
+            chatArea.appendChild(userMessage);
+
+            try {
+                // Send the query to the `/update-itinerary` endpoint
+                const formData = new FormData();
+                formData.append('user_query', userQuery);
+
+                const response = await fetch('/update-itinerary', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.error) {
+                    alert(`Error: ${result.error}`);
+                } else {
+                    // Update the itinerary content dynamically
+                    itineraryContent.innerHTML = result.content;
+                }
+            } catch (error) {
+                alert('An error occurred while updating the itinerary.');
+            }
+
+            // Clear the input field
+            chatInput.value = '';
+        });
+    </script>
+</body>
+</html>

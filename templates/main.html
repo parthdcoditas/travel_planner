@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Itinerary Planner</title>
+    <link rel="stylesheet" href="static\css\main.css">
+</head>
+<body>
+    <div class="container">
+        <div class="image-section">
+            <img src="static\image\travel.avif" alt="Travel Image">
+        </div>
+        <div class="form-section">
+            <h1>Plan Your Trip</h1>
+            <form id="weatherForm">
+                <label for="destination">Destination</label>
+                <input type="text" id="destination" name="destination" placeholder="Enter destination" required>
+            
+                <div class="date-container">
+                    <div>
+                        <label for="start_date">Start Date</label>
+                        <input type="date" id="start_date" name="start_date" required>
+                    </div>
+                    <div>
+                        <label for="end_date">End Date</label>
+                        <input type="date" id="end_date" name="end_date" required>
+                    </div>
+                </div>
+                <button type="submit">Check Weather</button>
+            
+                <label for="total_people">Total Number of People</label>
+                <input type="number" id="total_people" name="total_people" placeholder="Enter total number of people">
+
+                <button type="button" id="planTripButton">Plan Trip</button>
+            </form>            
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay"></div>
+    <div class="modal" id="responseModal">
+        <div id="modalContent"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('weatherForm');
+        const modal = document.getElementById('responseModal');
+        const modalContent = document.getElementById('modalContent');
+        const overlay = document.querySelector('.modal-overlay');
+        // const budgetInput = document.getElementById('budget');
+        // const budgetValue = document.getElementById('budgetValue');
+        const planTripButton = document.getElementById('planTripButton');
+        const container = document.querySelector('.container');
+    
+        // // Update budget display
+        // budgetInput.addEventListener('input', () => {
+        //     budgetValue.textContent = `₹${parseInt(budgetInput.value).toLocaleString()}`;
+        // });
+    
+        // Handle weather check submission
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            // Validate only the required fields for weather check
+            const destination = document.getElementById('destination').value.trim();
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+
+            if (!destination || !startDate || !endDate) {
+                alert("Please enter Destination and Dates to check the weather.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('destination', destination);
+            formData.append('start_date', startDate);
+            formData.append('end_date', endDate);
+
+            try {
+                const response = await fetch('/check-weather', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch weather data.");
+                }
+
+                const result = await response.json();
+
+                if (result.error) {
+                    modalContent.innerHTML = `<p>${result.error}</p>`;
+                } else if (result.content) {
+                    // Populate the modal content
+                    modalContent.innerHTML = `
+                        <p>${result.content}</p>
+                        <p>Do you wish to continue the trip?</p>
+                    `;
+
+                    // Add Yes and No buttons dynamically
+                    const yesButton = document.createElement('button');
+                    yesButton.textContent = 'Yes';
+                    yesButton.style.margin = '10px';
+                    yesButton.addEventListener('click', () => {
+                        alert('Trip On!');
+                        closeModal();
+                    });
+
+                    const noButton = document.createElement('button');
+                    noButton.textContent = 'No';
+                    noButton.style.margin = '10px';
+                    noButton.addEventListener('click', () => {
+                        alert('Trip Canceled!');
+                        closeModal();
+                        form.reset(); // Reset the form when "No" is clicked
+                    });
+
+                    modalContent.appendChild(yesButton);
+                    modalContent.appendChild(noButton);
+                } else {
+                    modalContent.innerHTML = `<p>Unexpected response format.</p>`;
+                }
+
+                modal.style.display = 'block';
+                overlay.style.display = 'block';
+            } catch (error) {
+                modalContent.innerHTML = `<p>An error occurred: ${error.message}</p>`;
+                modal.style.display = 'block';
+                overlay.style.display = 'block';
+            }
+        });
+        // Redirect to the itinerary page when "Plan Trip" is clicked
+        planTripButton.addEventListener('click', () => {
+            window.location.href = '/plan-trip-page';
+        });
+    //     planTripButton.addEventListener('click', async () => {
+    //     // Reset UI
+    //     container.innerHTML = `
+    //         <div class="itinerary-section">
+    //             <h2>Your Travel Itinerary</h2>
+    //             <div id="itineraryContent">Loading...</div>
+    //         </div>
+    //         <div class="chatbot-section">
+    //             <h2>Chat with Us</h2>
+    //             <div id="chatArea"></div>
+    //             <input type="text" id="chatInput" placeholder="Ask about your itinerary...">
+    //             <button id="sendChat">Send</button>
+    //         </div>
+    //     `;
+
+    //     try {
+    //         // Fetch the initial itinerary
+    //         const response = await fetch('/plan-itinerary', { method: 'POST' });
+    //         const result = await response.json();
+
+    //         if (result.error) {
+    //             document.getElementById('itineraryContent').textContent = result.error;
+    //         } else {
+    //             document.getElementById('itineraryContent').textContent = result.content;
+    //         }
+    //     } catch (error) {
+    //         document.getElementById('itineraryContent').textContent = 'Error loading itinerary.';
+    //     }
+
+    //     // Chatbot interaction
+    //     const chatInput = document.getElementById('chatInput');
+    //     const sendChat = document.getElementById('sendChat');
+    //     const chatArea = document.getElementById('chatArea');
+
+    //     sendChat.addEventListener('click', async () => {
+    //         const userQuery = chatInput.value;
+    //         if (!userQuery.trim()) return;
+
+    //         // Append user query to chat
+    //         const userMessage = document.createElement('div');
+    //         userMessage.textContent = `You: ${userQuery}`;
+    //         chatArea.appendChild(userMessage);
+
+    //         try {
+    //             // Fetch updated itinerary
+    //             const formData = new FormData();
+    //             formData.append('user_query', userQuery);
+
+    //             const response = await fetch('/update-itinerary', {
+    //                 method: 'POST',
+    //                 body: formData
+    //             });
+
+    //             const result = await response.json();
+    //             const botMessage = document.createElement('div');
+
+    //             if (result.error) {
+    //                 botMessage.textContent = `Bot: ${result.error}`;
+    //             } else {
+    //                 botMessage.textContent = `Bot: ${result.content}`;
+    //                 document.getElementById('itineraryContent').textContent = result.content;
+    //             }
+
+    //             chatArea.appendChild(botMessage);
+    //         } catch (error) {
+    //             const errorMessage = document.createElement('div');
+    //             errorMessage.textContent = 'Bot: Error updating itinerary.';
+    //             chatArea.appendChild(errorMessage);
+    //         }
+
+    //         chatInput.value = ''; // Clear input
+    //     });
+    // });
+        function closeModal() {
+            modal.style.display = 'none';
+            overlay.style.display = 'none';
+            modalContent.innerHTML = ''; // Clear modal content
+        }
+    </script>
+    
+</body>
+</html>
