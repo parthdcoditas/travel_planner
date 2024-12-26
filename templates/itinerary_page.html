@@ -18,24 +18,25 @@
         <div class="right-side">
             <!-- Top: Places Links -->
             <div class="places-section">
-                <h3>Places</h3>
+                <form id="placesForm">
+                    <input type="text" id="locationInput" placeholder="Enter a location name" required>
+                    <button type="submit">Open in Maps</button>
+                </form>
                 <ul id="placesList">
                     {% for place in fetched_places %}
                         <li>{{ place }}</li>
                     {% endfor %}
                 </ul>
-                <form id="placesForm">
-                    <input type="text" id="locationInput" placeholder="Enter a location name" required>
-                    <button type="submit">Open in Maps</button>
-                </form>
             </div>
 
             <!-- Bottom: Chatbot -->
             <div class="chatbot-section">
                 <h3>Chat with Us</h3>
                 <div id="chatArea"></div>
-                <input type="text" id="chatInput" placeholder="Ask a question...">
-                <button id="sendChat">Send</button>
+                <div class="chatbot-form">
+                    <input type="text" id="chatInput" placeholder="Ask a question...">
+                    <button id="sendChat">Send</button>
+                </div>
             </div>
         </div>
     </div>
@@ -43,6 +44,11 @@
     <script>
         const placesForm = document.getElementById('placesForm');
         const locationInput = document.getElementById('locationInput');
+        const chatInput = document.getElementById('chatInput');
+        const sendChat = document.getElementById('sendChat');
+        const chatArea = document.getElementById('chatArea');
+        const itineraryContent = document.getElementById('itineraryContent');
+
         placesForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const locationName = locationInput.value.trim();
@@ -68,11 +74,6 @@
             }
         });
 
-        const chatInput = document.getElementById('chatInput');
-        const sendChat = document.getElementById('sendChat');
-        const chatArea = document.getElementById('chatArea');
-        const itineraryContent = document.getElementById('itineraryContent');
-
         sendChat.addEventListener('click', async () => {
             const userQuery = chatInput.value.trim();
             if (!userQuery) return;
@@ -81,6 +82,7 @@
             const userMessage = document.createElement('div');
             userMessage.textContent = `You: ${userQuery}`;
             chatArea.appendChild(userMessage);
+            chatInput.value = '';
 
             try {
                 // Send the query to the `/update-itinerary` endpoint
@@ -93,19 +95,25 @@
                 });
 
                 const result = await response.json();
-
                 if (result.error) {
                     alert(`Error: ${result.error}`);
                 } else {
-                    // Update the itinerary content dynamically
-                    itineraryContent.innerHTML = result.content;
+                    const itineraryJson = JSON.parse(result.content); // Parse JSON data
+                    // Rebuild HTML content from JSON
+                    const formattedHtml = itineraryJson.map(day => `
+                        <h2>${day.day}</h2>
+                        <p><b>Morning:</b> ${day.morning}</p>
+                        <p><b>Afternoon:</b> ${day.afternoon}</p>
+                        <p><b>Evening:</b> ${day.evening}</p>
+                    `).join("");
+                    itineraryContent.innerHTML = formattedHtml;
                 }
             } catch (error) {
                 alert('An error occurred while updating the itinerary.');
             }
 
             // Clear the input field
-            chatInput.value = '';
+            
         });
     </script>
 </body>
